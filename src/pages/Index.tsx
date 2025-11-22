@@ -18,7 +18,7 @@ const Index = () => {
   const handleListenClick = async () => {
     if (isListening) {
       // Stop listening
-      const audioBlob = stopRecording();
+      const audioBlob = await stopRecording();
       setIsListening(false);
       
       if (audioBlob) {

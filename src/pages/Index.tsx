@@ -6,6 +6,7 @@ import { AudioVisualizer } from '@/components/AudioVisualizer';
 import { SongResult, SongData } from '@/components/SongResult';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
   const [isListening, setIsListening] = useState(false);
@@ -23,25 +24,43 @@ const Index = () => {
       if (audioBlob) {
         setIsSearching(true);
         
-        // Simulate API call - In production, this would call a real music recognition API
-        setTimeout(() => {
-          // Mock result
-          const mockResult: SongData = {
-            title: "Bohemian Rhapsody",
-            artist: "Queen",
-            album: "A Night at the Opera",
-            releaseDate: "1975",
-            externalUrl: "https://open.spotify.com/track/example"
-          };
-          
-          setSearchResult(mockResult);
+        try {
+          // Create form data with audio file
+          const formData = new FormData();
+          formData.append('audio', audioBlob, 'audio.webm');
+
+          // Call ACRCloud edge function
+          const { data, error } = await supabase.functions.invoke('identify-song', {
+            body: formData,
+          });
+
+          if (error) {
+            console.error('Error identifying song:', error);
+            toast({
+              title: "Song Not Found",
+              description: "Could not identify the song. Try again with a clearer audio sample.",
+              variant: "destructive",
+            });
+            setIsSearching(false);
+            return;
+          }
+
+          setSearchResult(data as SongData);
           setIsSearching(false);
           
           toast({
             title: "Song Found! 🎵",
-            description: `${mockResult.title} by ${mockResult.artist}`,
+            description: `${data.title} by ${data.artist}`,
           });
-        }, 2000);
+        } catch (err) {
+          console.error('Error:', err);
+          toast({
+            title: "Error",
+            description: "Something went wrong. Please try again.",
+            variant: "destructive",
+          });
+          setIsSearching(false);
+        }
       }
     } else {
       // Start listening

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Music2, Sparkles } from 'lucide-react';
 import { ListenButton } from '@/components/ListenButton';
@@ -70,13 +70,15 @@ const Index = () => {
     }
   };
 
-  if (error) {
-    toast({
-      title: "Microphone Error",
-      description: error,
-      variant: "destructive",
-    });
-  }
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Microphone Error",
+        description: error,
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">

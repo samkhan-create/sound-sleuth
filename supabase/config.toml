@@ -1,1 +1,4 @@
 project_id = "zlgvsktmnjimmvxsfvhx"
+
+[functions.identify-song]
+verify_jwt = false

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Music2, Sparkles } from 'lucide-react';
 import { ListenButton } from '@/components/ListenButton';
 import { AudioVisualizer } from '@/components/AudioVisualizer';
+import { RecordingTimer } from '@/components/RecordingTimer';
 import { SongResult, SongData } from '@/components/SongResult';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useToast } from '@/hooks/use-toast';
@@ -12,8 +13,27 @@ const Index = () => {
   const [isListening, setIsListening] = useState(false);
   const [searchResult, setSearchResult] = useState<SongData | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
   const { isRecording, audioData, startRecording, stopRecording, error } = useAudioRecorder();
   const { toast } = useToast();
+
+  // Timer effect
+  useEffect(() => {
+    let interval: number | undefined;
+    
+    if (isListening) {
+      setRecordingDuration(0);
+      interval = window.setInterval(() => {
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
+    } else {
+      setRecordingDuration(0);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isListening]);
 
   const handleListenClick = async () => {
     if (isListening) {
@@ -136,8 +156,14 @@ const Index = () => {
           <div className="space-y-8 mb-12">
             <AudioVisualizer isListening={isListening} audioData={audioData || undefined} />
             
-            <div className="flex justify-center">
+            <div className="flex flex-col items-center gap-4">
               <ListenButton isListening={isListening} onClick={handleListenClick} />
+              
+              <AnimatePresence>
+                {isListening && (
+                  <RecordingTimer duration={recordingDuration} minDuration={10} />
+                )}
+              </AnimatePresence>
             </div>
 
             {isSearching && (

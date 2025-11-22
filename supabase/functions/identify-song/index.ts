@@ -26,6 +26,22 @@ serve(async (req) => {
       );
     }
 
+    console.log('Audio file info:', {
+      name: audioFile.name,
+      type: audioFile.type,
+      size: audioFile.size,
+      sizeKB: (audioFile.size / 1024).toFixed(2) + ' KB'
+    });
+
+    // Validate audio file size (ACRCloud needs at least ~100KB for 5+ seconds of audio)
+    if (audioFile.size < 50000) {
+      console.error('Audio file too small:', audioFile.size, 'bytes');
+      return new Response(
+        JSON.stringify({ error: 'Recording too short. Please record at least 5-10 seconds of clear audio.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const accessKey = Deno.env.get('ACRCLOUD_ACCESS_KEY');
     const accessSecret = Deno.env.get('ACRCLOUD_ACCESS_SECRET');
     const host = Deno.env.get('ACRCLOUD_HOST');
@@ -84,11 +100,13 @@ serve(async (req) => {
     acrFormData.append('sample_bytes', audioFile.size.toString());
     acrFormData.append('timestamp', timestamp);
 
-    console.log('Sending request to ACRCloud...');
-    console.log('Host:', host);
-    console.log('Access Key (first 4 chars):', accessKey.substring(0, 4));
-    console.log('Timestamp:', timestamp);
-    console.log('Sample size:', audioFile.size);
+    console.log('Sending request to ACRCloud...', {
+      host,
+      accessKeyPrefix: accessKey.substring(0, 4),
+      timestamp,
+      sampleSize: audioFile.size,
+      sampleType: audioFile.type
+    });
     
     // Call ACRCloud API
     const acrResponse = await fetch(`https://${host}/v1/identify`, {
@@ -100,9 +118,18 @@ serve(async (req) => {
     console.log('ACRCloud response:', JSON.stringify(result));
 
     if (result.status.code !== 0) {
-      console.error('ACRCloud error:', result.status.msg);
+      console.error('ACRCloud error:', result.status);
+      
+      // Provide more helpful error messages
+      let errorMessage = result.status.msg || 'Song not found';
+      if (result.status.code === 2004) {
+        errorMessage = 'Could not identify the song. Please try recording for at least 10 seconds with clear audio.';
+      } else if (result.status.code === 1001) {
+        errorMessage = 'No match found. Make sure the music is playing clearly and try again.';
+      }
+      
       return new Response(
-        JSON.stringify({ error: result.status.msg || 'Song not found' }),
+        JSON.stringify({ error: errorMessage }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

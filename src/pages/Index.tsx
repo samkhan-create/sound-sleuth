@@ -188,7 +188,7 @@ const Index = () => {
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
                     2
                   </span>
-                  <span>Play the song you want to identify (5-10 seconds is enough)</span>
+                  <span>Play the song you want to identify (at least 10 seconds for best results)</span>
                 </li>
                 <li className="flex gap-3">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">

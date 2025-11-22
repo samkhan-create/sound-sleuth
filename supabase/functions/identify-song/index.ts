@@ -85,6 +85,10 @@ serve(async (req) => {
     acrFormData.append('timestamp', timestamp);
 
     console.log('Sending request to ACRCloud...');
+    console.log('Host:', host);
+    console.log('Access Key (first 4 chars):', accessKey.substring(0, 4));
+    console.log('Timestamp:', timestamp);
+    console.log('Sample size:', audioFile.size);
     
     // Call ACRCloud API
     const acrResponse = await fetch(`https://${host}/v1/identify`, {

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Music2, Sparkles } from 'lucide-react';
 import { ListenButton } from '@/components/ListenButton';
-import { AudioVisualizer } from '@/components/AudioVisualizer';
 import { RecordingTimer } from '@/components/RecordingTimer';
 import { SongResult, SongData } from '@/components/SongResult';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
@@ -155,7 +154,6 @@ const Index = () => {
 
           {/* Main listening area */}
           <div className="space-y-8 mb-12">
-            <AudioVisualizer isListening={isListening} audioData={audioData || undefined} />
             
             <div className="flex flex-col items-center gap-4">
               <ListenButton isListening={isListening} onClick={handleListenClick} />

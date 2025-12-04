@@ -14,7 +14,7 @@ const Index = () => {
   const [searchResult, setSearchResult] = useState<SongData | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
-  const { isRecording, audioData, startRecording, stopRecording, error } = useAudioRecorder();
+  const { isRecording, audioData, audioLevel, startRecording, stopRecording, error } = useAudioRecorder();
   const { toast } = useToast();
 
   // Timer effect
@@ -161,7 +161,7 @@ const Index = () => {
               
               <AnimatePresence>
                 {isListening && (
-                  <RecordingTimer duration={recordingDuration} minDuration={10} />
+                  <RecordingTimer duration={recordingDuration} minDuration={10} audioLevel={audioLevel} />
                 )}
               </AnimatePresence>
             </div>

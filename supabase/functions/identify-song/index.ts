@@ -96,11 +96,13 @@ serve(async (req) => {
     const signature = base64Encode(signatureBuffer);
 
     // Prepare multipart form data for ACRCloud
-    // Use a Blob with proper name to ensure correct content-disposition
-    const audioBlob = new Blob([audioBytes], { type: 'audio/wav' });
+    // Preserve the original audio format - ACRCloud supports webm, mp3, wav, etc.
+    const contentType = audioFile.type || 'audio/webm';
+    const fileName = audioFile.name || 'audio.webm';
     
     const acrFormData = new FormData();
-    acrFormData.append('sample', audioBlob, 'audio.wav');
+    // Send the original audio bytes with correct content type
+    acrFormData.append('sample', new Blob([audioBytes], { type: contentType }), fileName);
     acrFormData.append('access_key', accessKey);
     acrFormData.append('data_type', dataType);
     acrFormData.append('signature_version', signatureVersion);

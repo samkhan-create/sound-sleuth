@@ -26,14 +26,19 @@ serve(async (req) => {
       );
     }
 
+    // Read audio file as ArrayBuffer
+    const audioBuffer = await audioFile.arrayBuffer();
+    const audioBytes = new Uint8Array(audioBuffer);
+
     console.log('Audio file info:', {
       name: audioFile.name,
       type: audioFile.type,
       size: audioFile.size,
-      sizeKB: (audioFile.size / 1024).toFixed(2) + ' KB'
+      sizeKB: (audioFile.size / 1024).toFixed(2) + ' KB',
+      bytesLength: audioBytes.length
     });
 
-    // Validate audio file size (ACRCloud needs at least ~100KB for 5+ seconds of audio)
+    // Validate audio file size
     if (audioFile.size < 50000) {
       console.error('Audio file too small:', audioFile.size, 'bytes');
       return new Response(
@@ -91,21 +96,24 @@ serve(async (req) => {
     const signature = base64Encode(signatureBuffer);
 
     // Prepare multipart form data for ACRCloud
+    // Use a Blob with proper name to ensure correct content-disposition
+    const audioBlob = new Blob([audioBytes], { type: 'audio/wav' });
+    
     const acrFormData = new FormData();
-    acrFormData.append('sample', audioFile);
+    acrFormData.append('sample', audioBlob, 'audio.wav');
     acrFormData.append('access_key', accessKey);
     acrFormData.append('data_type', dataType);
     acrFormData.append('signature_version', signatureVersion);
     acrFormData.append('signature', signature);
-    acrFormData.append('sample_bytes', audioFile.size.toString());
+    acrFormData.append('sample_bytes', audioBytes.length.toString());
     acrFormData.append('timestamp', timestamp);
 
     console.log('Sending request to ACRCloud...', {
       host,
       accessKeyPrefix: accessKey.substring(0, 4),
       timestamp,
-      sampleSize: audioFile.size,
-      sampleType: audioFile.type
+      sampleBytes: audioBytes.length,
+      signatureLength: signature.length
     });
     
     // Call ACRCloud API
@@ -123,7 +131,7 @@ serve(async (req) => {
       // Provide more helpful error messages
       let errorMessage = result.status.msg || 'Song not found';
       if (result.status.code === 2004) {
-        errorMessage = 'Could not identify the song. Please try recording for at least 10 seconds with clear audio.';
+        errorMessage = 'Could not process the audio. Make sure music is playing clearly near your microphone.';
       } else if (result.status.code === 1001) {
         errorMessage = 'No match found. Make sure the music is playing clearly and try again.';
       }

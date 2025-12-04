@@ -131,9 +131,9 @@ serve(async (req) => {
       // Provide more helpful error messages
       let errorMessage = result.status.msg || 'Song not found';
       if (result.status.code === 2004) {
-        errorMessage = 'Could not process the audio. Make sure music is playing clearly near your microphone.';
+        errorMessage = 'No music detected in the recording. Play a song loudly near your microphone and try again.';
       } else if (result.status.code === 1001) {
-        errorMessage = 'No match found. Make sure the music is playing clearly and try again.';
+        errorMessage = 'Song not recognized. Try a different part of the song or a more popular track.';
       }
       
       return new Response(

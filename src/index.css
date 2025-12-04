@@ -17,10 +17,10 @@ All colors MUST be HSL.
     --popover: 220 20% 12%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 195 100% 55%;
+    --primary: 350 85% 60%;
     --primary-foreground: 220 25% 8%;
 
-    --secondary: 190 95% 45%;
+    --secondary: 340 80% 55%;
     --secondary-foreground: 220 25% 8%;
 
     --muted: 220 15% 20%;
@@ -34,14 +34,14 @@ All colors MUST be HSL.
 
     --border: 220 15% 22%;
     --input: 220 15% 22%;
-    --ring: 195 100% 55%;
+    --ring: 350 85% 60%;
 
     --radius: 1rem;
 
     /* Custom audio theme colors */
-    --gradient-primary: linear-gradient(135deg, hsl(195 100% 55%), hsl(190 95% 45%));
+    --gradient-primary: linear-gradient(135deg, hsl(350 85% 60%), hsl(340 80% 55%));
     --gradient-secondary: linear-gradient(135deg, hsl(280 90% 60%), hsl(260 85% 55%));
-    --glow-primary: 195 100% 55%;
+    --glow-primary: 350 85% 60%;
     --glow-accent: 280 90% 60%;
 
     /* Animations */

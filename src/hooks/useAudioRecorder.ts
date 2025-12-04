@@ -36,17 +36,52 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
       setError(null);
       audioChunksRef.current = [];
       
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Request high-quality audio for better recognition
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          sampleRate: 44100,
+          channelCount: 1,
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+        } 
+      });
       
       // Set up audio context for visualization
-      audioContextRef.current = new AudioContext();
+      audioContextRef.current = new AudioContext({ sampleRate: 44100 });
       analyserRef.current = audioContextRef.current.createAnalyser();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);
       analyserRef.current.fftSize = 256;
       
-      // Set up media recorder
-      mediaRecorderRef.current = new MediaRecorder(stream);
+      // Try different MIME types for better ACRCloud compatibility
+      const mimeTypes = [
+        'audio/mp4',
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus',
+      ];
+      
+      let selectedMimeType = '';
+      for (const type of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(type)) {
+          selectedMimeType = type;
+          break;
+        }
+      }
+      
+      console.log('Using MIME type:', selectedMimeType || 'default');
+      
+      // Set up media recorder with higher bitrate for better quality
+      const options: MediaRecorderOptions = {
+        audioBitsPerSecond: 128000,
+      };
+      
+      if (selectedMimeType) {
+        options.mimeType = selectedMimeType;
+      }
+      
+      mediaRecorderRef.current = new MediaRecorder(stream, options);
       
       mediaRecorderRef.current.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -54,7 +89,8 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
         }
       };
       
-      mediaRecorderRef.current.start();
+      // Request data more frequently for better chunks
+      mediaRecorderRef.current.start(1000);
       setIsRecording(true);
       updateAudioData();
     } catch (err) {
@@ -67,9 +103,15 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
   const stopRecording = useCallback((): Promise<Blob | null> => {
     return new Promise((resolve) => {
       if (mediaRecorderRef.current && isRecording) {
+        const mimeType = mediaRecorderRef.current.mimeType || 'audio/webm';
+        
         mediaRecorderRef.current.onstop = () => {
-          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-          console.log('Audio blob created:', audioBlob.size, 'bytes');
+          const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+          console.log('Audio blob created:', {
+            size: audioBlob.size,
+            type: audioBlob.type,
+            sizeKB: (audioBlob.size / 1024).toFixed(2) + ' KB'
+          });
           resolve(audioBlob);
         };
         

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+import { Music2, Sparkles } from 'lucide-react';
 import { ListenButton } from '@/components/ListenButton';
 import { RecordingTimer } from '@/components/RecordingTimer';
 import { SongResult, SongData } from '@/components/SongResult';
@@ -139,9 +139,14 @@ const Index = () => {
             animate={{ opacity: 1, y: 0 }}
             className="text-center mb-12"
           >
-            <h1 className="text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-4">
-              Sound Search
-            </h1>
+            <div className="inline-flex items-center gap-3 mb-4">
+              <div className="p-3 rounded-2xl bg-gradient-primary">
+                <Music2 className="w-8 h-8 text-primary-foreground" />
+              </div>
+              <h1 className="text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                Sound Search
+              </h1>
+            </div>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Discover any song in seconds. Just play it and let us identify it for you.
             </p>

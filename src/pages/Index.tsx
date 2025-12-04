@@ -47,7 +47,7 @@ const Index = () => {
         try {
           // Create form data with audio file
           const formData = new FormData();
-          formData.append('audio', audioBlob, 'audio.webm');
+          formData.append('audio', audioBlob, 'recording.wav');
 
           // Call ACRCloud edge function
           const { data, error } = await supabase.functions.invoke('identify-song', {

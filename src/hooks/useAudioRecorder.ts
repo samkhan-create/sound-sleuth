@@ -3,6 +3,7 @@ import { useState, useRef, useCallback } from 'react';
 interface UseAudioRecorderReturn {
   isRecording: boolean;
   audioData: Uint8Array | null;
+  audioLevel: number;
   startRecording: () => Promise<void>;
   stopRecording: () => Promise<Blob | null>;
   error: string | null;
@@ -45,9 +46,20 @@ const encodeWAV = (samples: Float32Array, sampleRate: number): Blob => {
   return new Blob([buffer], { type: 'audio/wav' });
 };
 
+// Calculate RMS audio level from samples
+const calculateRMS = (samples: Float32Array): number => {
+  if (samples.length === 0) return 0;
+  let sum = 0;
+  for (let i = 0; i < samples.length; i++) {
+    sum += samples[i] * samples[i];
+  }
+  return Math.sqrt(sum / samples.length);
+};
+
 export const useAudioRecorder = (): UseAudioRecorderReturn => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioData, setAudioData] = useState<Uint8Array | null>(null);
+  const [audioLevel, setAudioLevel] = useState(0);
   const [error, setError] = useState<string | null>(null);
   
   const streamRef = useRef<MediaStream | null>(null);
@@ -56,6 +68,7 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const animationFrameRef = useRef<number>();
   const samplesRef = useRef<Float32Array[]>([]);
+  const peakLevelRef = useRef(0);
 
   const updateAudioData = useCallback(() => {
     if (!analyserRef.current) return;
@@ -64,6 +77,11 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
     analyserRef.current.getByteFrequencyData(dataArray);
     setAudioData(dataArray);
     
+    // Calculate current level for display
+    const sum = dataArray.reduce((a, b) => a + b, 0);
+    const avgLevel = sum / dataArray.length / 255;
+    setAudioLevel(avgLevel);
+    
     animationFrameRef.current = requestAnimationFrame(updateAudioData);
   }, []);
 
@@ -71,6 +89,7 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
     try {
       setError(null);
       samplesRef.current = [];
+      peakLevelRef.current = 0;
       
       // Request audio with specific settings
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -79,7 +98,7 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
           channelCount: 1,
           echoCancellation: false,
           noiseSuppression: false,
-          autoGainControl: false,
+          autoGainControl: true, // Enable auto gain to help with quiet audio
         } 
       });
       
@@ -100,7 +119,14 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
       processorRef.current.onaudioprocess = (e) => {
         const inputData = e.inputBuffer.getChannelData(0);
         // Clone the data since it gets reused
-        samplesRef.current.push(new Float32Array(inputData));
+        const clone = new Float32Array(inputData);
+        samplesRef.current.push(clone);
+        
+        // Track peak level
+        const rms = calculateRMS(clone);
+        if (rms > peakLevelRef.current) {
+          peakLevelRef.current = rms;
+        }
       };
       
       source.connect(processorRef.current);
@@ -109,7 +135,7 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
       setIsRecording(true);
       updateAudioData();
       
-      console.log('Recording started with WAV format at', audioContextRef.current.sampleRate, 'Hz');
+      console.log('Recording started at', audioContextRef.current.sampleRate, 'Hz');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to access microphone';
       setError(errorMessage);
@@ -132,6 +158,7 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
       }
       
       setIsRecording(false);
+      setAudioLevel(0);
       
       // Combine all samples into one array
       const totalLength = samplesRef.current.reduce((acc, arr) => acc + arr.length, 0);
@@ -155,12 +182,26 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
         return;
       }
       
+      // Calculate overall RMS to check if audio is too quiet
+      const overallRMS = calculateRMS(combinedSamples);
+      
+      console.log('Audio analysis:', {
+        samples: combinedSamples.length,
+        duration: (combinedSamples.length / sampleRate).toFixed(2) + 's',
+        peakLevel: peakLevelRef.current.toFixed(4),
+        rmsLevel: overallRMS.toFixed(4),
+        isSilent: overallRMS < 0.001
+      });
+      
+      // Warn if audio seems too quiet
+      if (overallRMS < 0.001) {
+        console.warn('Audio appears to be very quiet or silent. Make sure music is playing near the microphone.');
+      }
+      
       // Convert to WAV
       const wavBlob = encodeWAV(combinedSamples, sampleRate);
       
       console.log('WAV audio created:', {
-        samples: combinedSamples.length,
-        duration: (combinedSamples.length / sampleRate).toFixed(2) + 's',
         size: wavBlob.size,
         sizeKB: (wavBlob.size / 1024).toFixed(2) + ' KB',
         type: wavBlob.type
@@ -173,6 +214,7 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
   return {
     isRecording,
     audioData,
+    audioLevel,
     startRecording,
     stopRecording,
     error,

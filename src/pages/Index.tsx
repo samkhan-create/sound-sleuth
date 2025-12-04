@@ -45,9 +45,10 @@ const Index = () => {
         setIsSearching(true);
         
         try {
-          // Create form data with audio file
+          // Create form data with audio file - use extension based on type
           const formData = new FormData();
-          formData.append('audio', audioBlob, 'recording.wav');
+          const extension = audioBlob.type.includes('mp4') ? 'mp4' : 'webm';
+          formData.append('audio', audioBlob, `recording.${extension}`);
 
           // Call ACRCloud edge function
           const { data, error } = await supabase.functions.invoke('identify-song', {
